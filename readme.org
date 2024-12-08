@@ -1,0 +1,11 @@
+* screenshot
+
+* requirements
+
+- imagemagick: 'convert' command should be available.
+- xournalpp
+
+* features
+
+- two org links are defined, ~xopp-figure~ and ~xopp-pages~, the first is used for figures (single-page drawings) and will be extracted and previewed in org, the latter is embedded in the pdf exports as part of the document (without extracting figures).
+- xournalpp pages are embedded into org's pdf/latex exports
