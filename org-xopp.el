@@ -1,10 +1,11 @@
+;; -*- lexical-binding: t -*-
 ;;; org-xopp.el --- Rapidly create and follow links across text files  -*- lexical-binding: t; -*-
 
 ;; Author: Mahmood Sheikh <mahmod.m2015@gmail.com>
 ;; Keywords: lisp
 ;; Version: 0.0.1
 
-;; Copyright (C) 2024  Mahmood Sheikh and Bob Weiner
+;; Copyright (C) 2024  Mahmood Sheikh
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -27,7 +28,7 @@
 ;;; Code:
 (require 'org-compat)
 (require 'ol)
-(require 'cl)
+(require 'cl-lib)
 (require 'org-element-ast)
 (require 'org-element)
 
@@ -123,44 +124,33 @@
             ;; export the .xopp file to an image if not already done
             (progn
               (message "generating image %s" output-path)
-              (lexical-let ((begin begin)
-                            (end end)
-                            (width width)
-                            (output-path output-path)
-                            (ov ov))
-                (prog1 t
-                  (make-process
-                   :name "xopp-preview"
-                   :buffer (generate-new-buffer " *xopp-preview*")
-                   :command (list
-                             "sh"
-                             "-c"
-                             ;; we shouldnt be discarding stderr
-                             (format "%s '%s' '%s'"
-                                     org-xopp-figure-generation-script
-                                     absolute-path
-                                     output-path))
-                   :sentinel
-                   (lambda (proc status)
-                     (let ((out (with-current-buffer
-                                    (process-buffer proc)
-                                  (string-trim (buffer-string)))))
-                       (if (eq status 0)
-                           ;; its not necessary to grab it output-path from the output buffer
-                           (when-let* ((output-path out)
-                                       (img (org--create-inline-image output-path width))
-                                       (org-buf (overlay-buffer ov))
-                                       (buffer-live-p org-buf)
-                                       (file-exists-p output-path))
-                             (with-current-buffer org-buf
-                               (save-excursion
-                                 (goto-char begin)
-                                 (let ((ov (make-overlay begin end)))
-                                   (overlay-put ov 'display img)
-                                   (overlay-put ov 'modification-hooks
-                                                (list (lambda (ov &rest _) (delete-overlay ov))))))))
-                         (progn
-                           (message "Error generating image: %s" status)))))))))))))))
+              (prog1 t
+                (make-process
+                 :name "xopp-preview"
+                 ;; not a good idea to keep generating new buffers
+                 :buffer (generate-new-buffer " *xopp-preview*")
+                 :command (list org-xopp-figure-generation-script
+                                absolute-path
+                                output-path)
+                 :sentinel
+                 (lambda (proc status)
+                   (let ((out (with-current-buffer
+                                  (process-buffer proc)
+                                (string-trim (buffer-string)))))
+                     (if (not (numberp status))
+                         (when-let* ((img (org--create-inline-image output-path width))
+                                     (org-buf (overlay-buffer ov))
+                                     (buffer-live-p org-buf)
+                                     (file-exists-p output-path))
+                           (with-current-buffer org-buf
+                             (save-excursion
+                               (goto-char begin)
+                               (let ((ov (make-overlay begin end)))
+                                 (overlay-put ov 'display img)
+                                 (overlay-put ov 'modification-hooks
+                                              (list (lambda (ov &rest _) (delete-overlay ov))))))))
+                       (progn
+                         (message "Error generating image: %s" status))))))))))))))
 
 (provide 'org-xopp)
 ;;; org-xopp.el ends here
