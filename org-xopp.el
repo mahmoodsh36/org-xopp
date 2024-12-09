@@ -135,11 +135,11 @@
                                 absolute-path
                                 output-path)
                  :sentinel
-                 (lambda (proc status)
+                 (lambda (proc event)
                    (let ((out (with-current-buffer
                                   (process-buffer proc)
                                 (string-trim (buffer-string)))))
-                     (if (not (numberp status))
+                     (if (string= event "finished\n")
                          (when-let* ((img (org--create-inline-image output-path width))
                                      (org-buf (overlay-buffer ov))
                                      (buffer-live-p org-buf)
@@ -152,7 +152,7 @@
                                  (overlay-put ov 'modification-hooks
                                               (list (lambda (ov &rest _) (delete-overlay ov))))))))
                        (progn
-                         (message "Error generating image: %s" status))))))))))))))
+                         (message "Error generating image: %s" event))))))))))))))
 
 (provide 'org-xopp)
 ;;; org-xopp.el ends here
