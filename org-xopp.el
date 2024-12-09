@@ -51,16 +51,18 @@
 (defun org-xopp-new-figure ()
   "insert a link to a new xournalpp file meant for a figure, open the file."
   (interactive)
-  (let* ((filepath (read-file-name "New xournalpp file: ")))
-    (org-xopp-open-xournalpp filepath)
-    (insert (format "[[xopp-figure:%s]]" filepath))))
+  (when-let* ((filepath (read-file-name "New xournalpp file: "))
+              (full-filepath (expand-file-name filepath)))
+    (org-xopp-open-xournalpp full-filepath)
+    (insert (format "[[xopp-figure:%s]]" full-filepath))))
 
 (defun org-xopp-new-pages ()
   "insert a link to a new xournalpp file meant for a document, open the file."
   (interactive)
-  (let* ((filepath (read-file-name "New xournalpp file: ")))
-    (org-xopp-open-xournalpp filepath)
-    (insert (format "[[xopp-pages:%s]]" filepath))))
+  (when-let* ((filepath (read-file-name "New xournalpp file: "))
+              (full-filepath (expand-file-name filepath)))
+    (org-xopp-open-xournalpp full-filepath)
+    (insert (format "[[xopp-pages:%s]]" full-filepath))))
 
 (defun org-xopp-export-figure (path desc backend)
   "handles figures on org exports."
