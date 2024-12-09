@@ -1,11 +1,22 @@
 * screenshot
 
-* requirements
+* example usage
 
-- imagemagick: 'convert' command should be available.
-- xournalpp
+1. invoke ~org-xopp-new-figure~ and choose a name for the new .xopp file
+2. draw something in the xournalpp window that opens, hit save
+3. reload org file (kill/reopen or using ~find-file~)
+4. the figure you drew will be inserted in the org document without the background (transparent and trimmed with background removed).
 
 * features
 
 - two org links are defined, ~xopp-figure~ and ~xopp-pages~, the first is used for figures (single-page drawings) and will be extracted and previewed in org, the latter is embedded in the pdf exports as part of the document (without extracting figures).
 - xournalpp pages are embedded into org's pdf/latex exports
+
+* requirements
+
+- imagemagick: 'convert' command should be available.
+- xournalpp
+
+* todos
+
+- only regenerate pdf/image files if the corresponding .xopp files have changed
