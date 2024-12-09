@@ -31,10 +31,11 @@
 ;; we can only `load-file-name' at load time, so we do it here to be able to invoke
 ;; the script.
 (defvar org-xopp-figure-generation-script
-  (format "%sgenerate_xopp_figure.sh" (file-name-directory load-file-name)))
+  (format "%sgenerate_xopp_figure.sh" (file-name-directory load-file-name))
+  "path to generate_xopp_figure.sh")
 
 (defun org-xopp-setup ()
-  "Initial setup for org-xopp."
+  "initial setup for org-xopp."
   (org-link-set-parameters "xopp-figure"
                            :follow #'org-xopp-link-open
                            :export #'org-xopp-export-figure)
@@ -43,28 +44,23 @@
                            :export #'org-xopp-export-pages)
   (add-hook 'org-mode-hook 'org-xopp-place-figures))
 
-(defun new-xournalpp-figure ()
-  "Insert a link to a new xournalpp file meant for a figure, open the file."
+(defun org-xopp-new-figure ()
+  "insert a link to a new xournalpp file meant for a figure, open the file."
   (interactive)
   (let* ((filepath (read-file-name "New xournalpp file: ")))
-    (start-process "xournalpp" "xournalpp" "xournalpp" filepath)
+    (org-xopp-open-xournalpp filepath)
     (insert (format "[[xopp-figure:%s]]" filepath))))
 
-(defun new-xournalpp-pages ()
-  "Insert a link to a new xournalpp file meant for a document, open the file."
+(defun org-xopp-new-pages ()
+  "insert a link to a new xournalpp file meant for a document, open the file."
   (interactive)
   (let* ((filepath (read-file-name "New xournalpp file: ")))
-    (start-process "xournalpp" "xournalpp" "xournalpp" filepath)
+    (org-xopp-open-xournalpp filepath)
     (insert (format "[[xopp-pages:%s]]" filepath))))
 
-(defun org-xopp-shell-command-to-string-no-stderr (cmd)
-  (with-output-to-string
-    (with-current-buffer
-        standard-output
-      (process-file shell-file-name nil '(t nil) nil shell-command-switch cmd))))
-
 (defun org-xopp-export-figure (path desc backend)
-  (let* ((image-filepath (org-xopp-temp-image-file path)))
+  "handles figures on org exports."
+  (let* ((image-filepath (org-xopp-temp-file path)))
     (call-process org-xopp-figure-generation-script
                   nil
                   nil
@@ -79,26 +75,30 @@
       (format "\\begin{center}\\includegraphics[max width=0.5\\linewidth]{%s}\\end{center}" image-filepath))))
 
 (defun org-xopp-export-pages (path desc backend)
-  (shell-command
-   (format "xournalpp --create-pdf '%s' '%s'"
-           pdf-filepath
-           path))
-  (when (equal backend "html")
-    (format "<img src='%s' />" image-filepath))
-  (when (equal backend "latex")
-    (format "\\includepdf[pages=-]{%s}" pdf-filepath)))
+  "handles xournalpp documents on org exports."
+  (let ((pdf-filepath (org-xopp-temp-file path "pdf")))
+    (call-process "xournalpp"
+                  nil nil nil
+                  "--create-pdf"
+                  pdf-filepath
+                  path)
+    (when (string= backend "latex")
+      (format "\\includepdf[pages=-]{%s}" pdf-filepath))))
 
 (defun org-xopp-open-xournalpp (xopp-filepath)
+  "open xournalpp with the given XOPP-FILEPATH."
   (start-process "xournalpp" "xournalpp" "xournalpp" xopp-filepath))
 
-(defun org-xopp-link-open (link desc backend)
-  "Handles org's :follow function (just opens the xournalpp file)."
-  (let ((link-path (org-element-property :path link)))
-    (org-xopp-open-xournalpp link-path)))
+(defun org-xopp-link-open (path _)
+  "handles org's :follow function (just opens the xournalpp file)."
+  (org-xopp-open-xournalpp path))
 
-(defun org-xopp-temp-image-file (xopp-filepath)
+(cl-defun org-xopp-temp-file (xopp-filepath &optional (extension "png"))
   "returns a filepath of the image to be generated from the given XOPP-FILEPATH."
-  (format "%s%s.png" temporary-file-directory (file-name-base xopp-filepath)))
+  (format "%s%s.%s"
+          temporary-file-directory
+          (file-name-base xopp-filepath)
+          extension))
 
 (defun org-xopp-place-figures ()
   "overlay .xopp file links in the current org buffer with the corresponding sketches."
@@ -111,7 +111,7 @@
              (end (org-element-property :end link))
              (absolute-path (expand-file-name path))
              (width (org-display-inline-image--width link))
-             (output-path (org-xopp-temp-image-file absolute-path))
+             (output-path (org-xopp-temp-file absolute-path))
              (ov (make-overlay begin end)))
         (when (string-equal type "xopp-figure")
           ;; check if the .xopp file exists
