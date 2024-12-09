@@ -1,5 +1,7 @@
 * screenshot
 
+[[screen.png]]
+
 * example usage
 
 1. invoke ~org-xopp-new-figure~ and choose a name for the new .xopp file
@@ -18,6 +20,13 @@ using ~elpaca~:
     :ensure ( :host github :repo "mahmoodsheikh36/org-xopp")
     :config
     (org-xopp-setup))
+#+end_src
+
+using ~straight~:
+
+#+begin_src emacs-lisp :eval no
+  (straight-use-package
+   '(org-xopp :type git :host github :repo "mahmoodsheikh36/org-xopp"))
 #+end_src
 
 * features
