@@ -3,9 +3,22 @@
 * example usage
 
 1. invoke ~org-xopp-new-figure~ and choose a name for the new .xopp file
-2. draw something in the xournalpp window that opens, hit save
-3. reload org file (kill/reopen or using ~find-file~)
-4. the figure you drew will be inserted in the org document without the background (transparent and trimmed with background removed).
+2. a link will be inserted in org mode, hit save (in org)
+3. draw something in the xournalpp window that opens, then hit save in xournalpp
+4. reload org file (kill/reopen or using ~find-file~)
+5. the figure you drew will be inserted in the org document without the background (transparent and trimmed with background removed).
+
+* installation
+
+using ~elpaca~:
+
+#+begin_src emacs-lisp :eval no
+  (use-package org-xopp
+    :after (org)
+    :ensure ( :host github :repo "mahmoodsheikh36/org-xopp")
+    :config
+    (org-xopp-setup))
+#+end_src
 
 * features
 
@@ -20,3 +33,5 @@
 * todos
 
 - only regenerate pdf/image files if the corresponding .xopp files have changed
+- handle edge cases (errors in image generation, etc)
+- live sync of figures (automatically display changes in org every time a linked .xopp file is modified)
