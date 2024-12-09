@@ -2,7 +2,7 @@
 
 ;; Author: Mahmood Sheikh <mahmod.m2015@gmail.com>
 ;; Keywords: lisp
-;; Version: 0.0.2
+;; Version: 0.0.1
 
 ;; Copyright (C) 2024  Mahmood Sheikh and Bob Weiner
 
