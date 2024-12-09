@@ -23,7 +23,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; This package is for making arbitrary links across text files.
+;; This package is for embedding xournalpp figures/pages in org-mode.
 
 ;;; Code:
 (require 'org-compat)
