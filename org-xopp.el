@@ -27,6 +27,9 @@
 ;;; Code:
 (require 'org-compat)
 (require 'ol)
+(require 'cl)
+(require 'org-element-ast)
+(require 'org-element)
 
 ;; we can only `load-file-name' at load time, so we do it here to be able to invoke
 ;; the script.
@@ -95,7 +98,7 @@
 
 (cl-defun org-xopp-temp-file (xopp-filepath &optional (extension "png"))
   "returns a filepath of the image to be generated from the given XOPP-FILEPATH."
-  (format "%s%s.%s"
+  (format "%sorg-xopp-%s.%s"
           temporary-file-directory
           (file-name-base xopp-filepath)
           extension))
@@ -118,40 +121,46 @@
           (if (not (file-exists-p absolute-path))
               (message "file not found: %s" absolute-path)
             ;; export the .xopp file to an image if not already done
-            (lexical-let ((begin begin)
-                          (end end)
-                          (width width)
-                          (output-path output-path)
-                          (ov ov))
-              (prog1 t
-                (make-process
-                 :name "xopp-preview"
-                 :buffer (generate-new-buffer " *xopp-preview*")
-                 :command (list
-                           "sh"
-                           "-c"
-                           (format "%s '%s' '%s' 2>/dev/null"
-                                   org-xopp-figure-generation-script
-                                   absolute-path
-                                   output-path))
-                 :sentinel
-                 (lambda (_proc _status)
-                   ;; its not necessary to grab it output-path from the output buffer
-                   (when-let* ((output-path
-                                (with-current-buffer
-                                    (process-buffer _proc)
-                                  (string-trim (buffer-string))))
-                               (img (org--create-inline-image output-path width))
-                               (org-buf (overlay-buffer ov))
-                               (buffer-live-p org-buf)
-                               (file-exists-p output-path))
-                     (with-current-buffer org-buf
-                       (save-excursion
-                         (goto-char begin)
-                         (let ((ov (make-overlay begin end)))
-                           (overlay-put ov 'display img)
-                           (overlay-put ov 'modification-hooks
-                                        (list (lambda (ov &rest _) (delete-overlay ov))))))))))))))))))
+            (progn
+              (message "generating image %s" output-path)
+              (lexical-let ((begin begin)
+                            (end end)
+                            (width width)
+                            (output-path output-path)
+                            (ov ov))
+                (prog1 t
+                  (make-process
+                   :name "xopp-preview"
+                   :buffer (generate-new-buffer " *xopp-preview*")
+                   :command (list
+                             "sh"
+                             "-c"
+                             ;; we shouldnt be discarding stderr
+                             (format "%s '%s' '%s'"
+                                     org-xopp-figure-generation-script
+                                     absolute-path
+                                     output-path))
+                   :sentinel
+                   (lambda (proc status)
+                     (let ((out (with-current-buffer
+                                    (process-buffer proc)
+                                  (string-trim (buffer-string)))))
+                       (if (eq status 0)
+                           ;; its not necessary to grab it output-path from the output buffer
+                           (when-let* ((output-path out)
+                                       (img (org--create-inline-image output-path width))
+                                       (org-buf (overlay-buffer ov))
+                                       (buffer-live-p org-buf)
+                                       (file-exists-p output-path))
+                             (with-current-buffer org-buf
+                               (save-excursion
+                                 (goto-char begin)
+                                 (let ((ov (make-overlay begin end)))
+                                   (overlay-put ov 'display img)
+                                   (overlay-put ov 'modification-hooks
+                                                (list (lambda (ov &rest _) (delete-overlay ov))))))))
+                         (progn
+                           (message "Error generating image: %s" status)))))))))))))))
 
 (provide 'org-xopp)
 ;;; org-xopp.el ends here

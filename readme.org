@@ -17,7 +17,7 @@ using ~elpaca~:
 #+begin_src emacs-lisp :eval no
   (use-package org-xopp
     :after (org)
-    :ensure ( :host github :repo "mahmoodsheikh36/org-xopp")
+    :ensure ( :host github :repo "mahmoodsh36/org-xopp" :files (:defaults "*.sh"))
     :config
     (org-xopp-setup))
 #+end_src
@@ -26,7 +26,7 @@ using ~straight~:
 
 #+begin_src emacs-lisp :eval no
   (straight-use-package
-   '(org-xopp :type git :host github :repo "mahmoodsheikh36/org-xopp"))
+   '(org-xopp :type git :host github :repo "mahmoodsh36/org-xopp" :files (:defaults "*.sh")))
 #+end_src
 
 * features
