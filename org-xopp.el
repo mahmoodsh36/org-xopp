@@ -75,10 +75,10 @@
                   image-filepath)
     ;; perhaps allow the user to specify how the figures are handled on export?
     ;; this behavior is somewhat of a "placeholder".
-    (when (string= backend "html")
-      (format "<img src='%s' />" image-filepath))
-    (when (string= backend "latex")
-      (format "\\begin{center}\\includegraphics[max width=0.5\\linewidth]{%s}\\end{center}" image-filepath))))
+    (if (string= backend "html")
+        (format "<img src='%s' />" image-filepath)
+      (when (string= backend "latex")
+        (format "\\begin{center}\\includegraphics[max width=0.5\\linewidth]{%s}\\end{center}" image-filepath)))))
 
 (defun org-xopp-export-pages (path desc backend)
   "handles xournalpp documents on org exports."
