@@ -27,6 +27,8 @@ using ~straight~:
 #+begin_src emacs-lisp :eval no
   (straight-use-package
    '(org-xopp :type git :host github :repo "mahmoodsh36/org-xopp" :files (:defaults "*.sh")))
+  (require 'org-xopp)
+  (org-xopp-setup)
 #+end_src
 
 * features
