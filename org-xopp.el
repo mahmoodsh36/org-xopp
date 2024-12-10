@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t -*-
-;;; org-xopp.el --- Rapidly create and follow links across text files  -*- lexical-binding: t; -*-
+;;; org-xopp.el --- embed xournalpp figures/pages in org-mode.
 
 ;; Author: Mahmood Sheikh <mahmod.m2015@gmail.com>
 ;; Keywords: lisp
