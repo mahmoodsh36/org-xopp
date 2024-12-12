@@ -29,7 +29,6 @@
 (require 'org-compat)
 (require 'ol)
 (require 'cl-lib)
-(require 'org-element-ast)
 (require 'org-element)
 
 ;; we can only `load-file-name' at load time, so we do it here to be able to invoke
@@ -152,7 +151,7 @@
                                  (overlay-put ov 'modification-hooks
                                               (list (lambda (ov &rest _) (delete-overlay ov))))))))
                        (progn
-                         (message "Error generating image: %s" event))))))))))))))
+                         (message "Error generating image: %s, %s" event out))))))))))))))
 
 (provide 'org-xopp)
 ;;; org-xopp.el ends here
