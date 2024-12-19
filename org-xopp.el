@@ -37,6 +37,14 @@
   (format "%sgenerate_xopp_figure.sh" (file-name-directory load-file-name))
   "path to generate_xopp_figure.sh")
 
+(defcustom org-xopp-generate-image-async t
+  "non-nil means to generate images asynchronously so as to not delay
+the startup of org-mode.")
+
+(defcustom org-xopp-regenerate-only-on-change t
+  "non-nil means to generate images every time regardless of whether
+there have been changes to the .xopp files or not.")
+
 (defun org-xopp-setup ()
   "initial setup for org-xopp."
   (org-link-set-parameters "xopp-figure"
@@ -65,13 +73,7 @@
 
 (defun org-xopp-export-figure (path desc backend)
   "handles figures on org exports."
-  (let* ((image-filepath (org-xopp-temp-file path)))
-    (call-process org-xopp-figure-generation-script
-                  nil
-                  nil
-                  nil
-                  path
-                  image-filepath)
+  (let* ((image-filepath (org-xopp-generate-figure path)))
     ;; perhaps allow the user to specify how the figures are handled on export?
     ;; this behavior is somewhat of a "placeholder".
     (if (string= backend "html")
@@ -105,53 +107,76 @@
           (file-name-base xopp-filepath)
           extension))
 
+(defun org-xopp-generate-figure (xopp-filepath)
+  "synchronously generate a figure for the given file XOPP-FILEPATH."
+  (let* ((image-filepath (org-xopp-temp-file xopp-filepath)))
+    (if (or (not org-xopp-regenerate-only-on-change)
+            (file-newer-than-file-p xopp-filepath image-filepath))
+        (call-process org-xopp-figure-generation-script
+                      nil
+                      nil
+                      nil
+                      xopp-filepath
+                      image-filepath)
+      image-filepath)))
+
 (defun org-xopp-place-figures ()
   "overlay .xopp file links in the current org buffer with the corresponding sketches."
   (interactive)
   (org-element-map (org-element-parse-buffer) 'link
     (lambda (link)
       (let* ((type (org-element-property :type link))
+             (buffer (current-buffer))
              (path (org-element-property :path link))
-             (begin (org-element-property :begin link))
-             (end (org-element-property :end link))
              (absolute-path (expand-file-name path))
-             (width (org-display-inline-image--width link))
-             (output-path (org-xopp-temp-file absolute-path))
-             (ov (make-overlay begin end)))
+             (output-path (org-xopp-temp-file absolute-path)))
         (when (string-equal type "xopp-figure")
           ;; check if the .xopp file exists
           (if (not (file-exists-p absolute-path))
               (message "file not found: %s" absolute-path)
             ;; export the .xopp file to an image if not already done
             (progn
-              (message "generating image %s" output-path)
-              (prog1 t
-                (make-process
-                 :name "xopp-preview"
-                 ;; not a good idea to keep generating new buffers
-                 :buffer (generate-new-buffer " *xopp-preview*")
-                 :command (list org-xopp-figure-generation-script
-                                absolute-path
-                                output-path)
-                 :sentinel
-                 (lambda (proc event)
-                   (let ((out (with-current-buffer
-                                  (process-buffer proc)
-                                (string-trim (buffer-string)))))
-                     (if (string= event "finished\n")
-                         (when-let* ((img (org--create-inline-image output-path width))
-                                     (org-buf (overlay-buffer ov))
-                                     (buffer-live-p org-buf)
-                                     (file-exists-p output-path))
-                           (with-current-buffer org-buf
-                             (save-excursion
-                               (goto-char begin)
-                               (let ((ov (make-overlay begin end)))
-                                 (overlay-put ov 'display img)
-                                 (overlay-put ov 'modification-hooks
-                                              (list (lambda (ov &rest _) (delete-overlay ov))))))))
-                       (progn
-                         (message "Error generating image: %s, %s" event out))))))))))))))
+              (if (or (not org-xopp-regenerate-only-on-change)
+                      (file-newer-than-file-p absolute-path output-path))
+                  (progn
+                    (message "generating image %s" output-path)
+                    ;; generate asynchronously
+                    (if org-xopp-generate-image-async
+                        (make-process
+                         :name "xopp-preview"
+                         ;; not a good idea to keep generating new buffers
+                         :buffer (generate-new-buffer " *xopp-preview*")
+                         :command (list org-xopp-figure-generation-script
+                                        absolute-path
+                                        output-path)
+                         :sentinel
+                         (lambda (proc event)
+                           (let ((out (with-current-buffer
+                                          (process-buffer proc)
+                                        (string-trim (buffer-string)))))
+                             (if (string= event "finished\n")
+                                 (org-xopp-place-image buffer output-path link)
+                               (message "Error generating image: %s, %s" event out)))))
+                      ;; generate synchronously
+                      (org-xopp-generate-figure absolute-path)
+                      (org-xopp-place-image buffer output-path link)
+                      ))
+                ;; display without generation (file already present)
+                (org-xopp-place-image buffer output-path link)))))))))
+
+(defun org-xopp-place-image (buffer image-path link)
+  "replace LINK with an overlay displaying the image in IMAGE-PATH."
+  (when-let* ((width (or (org-display-inline-image--width link) 400))
+              (begin (org-element-property :begin link))
+              (end (org-element-property :end link))
+              (ov (make-overlay begin end))
+              (img (org--create-inline-image image-path width))
+              (buffer-live-p buffer)
+              (file-exists-p image-path))
+    (let ((ov (make-overlay begin end)))
+      (overlay-put ov 'display img)
+      (overlay-put ov 'modification-hooks
+                   (list (lambda (ov &rest _) (delete-overlay ov)))))))
 
 (provide 'org-xopp)
 ;;; org-xopp.el ends here
