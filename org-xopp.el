@@ -159,28 +159,28 @@ there have been changes to the .xopp files or not.")
                                (message "Error generating image: %s, %s" event out)))))
                       ;; generate synchronously
                       (org-xopp-generate-figure absolute-path)
-                      (org-xopp-place-image buffer output-path link)
-                      ))
+                      (org-xopp-place-image buffer output-path link)))
                 ;; display without generation (file already present)
                 (org-xopp-place-image buffer output-path link)))))))))
 
 (defun org-xopp-place-image (buffer image-path link)
   "replace LINK with an overlay displaying the image in IMAGE-PATH."
-  (let* ((begin (org-element-property :begin link))
-         (end (org-element-property :end link))
-         (ov (make-overlay begin end)))
-    ;; if org-link-preview-file (introduced in org-9.7) is available, make use of it,
-    ;; otherwise we place the image ourselves.
-    (if (fboundp 'org-link-preview-file)
-        (org-link-preview-file ov image-path link)
-      (when-let* ((width (or (org-display-inline-image--width link) 400))
-                  (img (org--create-inline-image image-path width))
-                  (buffer-live-p buffer)
-                  (file-exists-p image-path))
-        (let ((ov (make-overlay begin end)))
-          (overlay-put ov 'display img)
-          (overlay-put ov 'modification-hooks
-                       (list (lambda (ov &rest _) (delete-overlay ov)))))))))
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (let* ((begin (org-element-property :begin link))
+             (end (org-element-property :end link))
+             (ov (make-overlay begin end)))
+        ;; if org-link-preview-file (introduced in org-9.7) is available, make use of it,
+        ;; otherwise we place the image ourselves.
+        (if (fboundp 'org-link-preview-file)
+            (org-link-preview-file ov image-path link)
+          (let* ((width (or (org-display-inline-image--width link) 400))
+                 (img (org--create-inline-image image-path width))
+                 (file-exists-p image-path))
+            (let ((ov (make-overlay begin end)))
+              (overlay-put ov 'display img)
+              (overlay-put ov 'modification-hooks
+                           (list (lambda (ov &rest _) (delete-overlay ov)))))))))))
 
 (provide 'org-xopp)
 ;;; org-xopp.el ends here
