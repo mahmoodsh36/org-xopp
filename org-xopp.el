@@ -173,7 +173,10 @@ there have been changes to the .xopp files or not.")
         ;; if org-link-preview-file (introduced in org-9.7) is available, make use of it,
         ;; otherwise we place the image ourselves.
         (if (fboundp 'org-link-preview-file)
-            (org-link-preview-file ov image-path link)
+            (progn
+              (overlay-put ov 'modification-hooks
+                           (list (lambda (ov &rest _) (delete-overlay ov))))
+              (org-link-preview-file ov image-path link))
           (let* ((width (or (org-display-inline-image--width link) 400))
                  (img (org--create-inline-image image-path width))
                  (file-exists-p image-path))
