@@ -41,12 +41,14 @@ using ~straight~:
 * requirements
 
 - ~imagemagick~: ~convert~ command should be available.
+- ~gunzip~ and ~gzip~ commands
 - ~xournalpp~
 
 * todos
 
-- only regenerate pdf/image files if the corresponding .xopp files have changed
 - handle edge cases (errors in image generation, etc)
 - live sync of figures (automatically display changes in org every time a linked .xopp file is modified)
 - more customization options
-- implement image centering (the behavior in the picture is from my config and depends on functionality from the ~dev~ branch of ~org-mode~)
+- allow user to choose generated image type and dimensions (when extracting figures)
+- handle multi-page xournalpp documents on html exports
+- eliminate the dependency on the external script and run the commands in elisp instead
