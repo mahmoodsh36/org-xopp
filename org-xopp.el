@@ -31,12 +31,6 @@
 (require 'cl-lib)
 (require 'org-element)
 
-;; we can only `load-file-name' at load time, so we do it here to be able to invoke
-;; the script.
-(defvar org-xopp-figure-generation-script
-  (format "%sgenerate_xopp_figure.sh" (file-name-directory load-file-name))
-  "path to generate_xopp_figure.sh")
-
 (defcustom org-xopp-generate-image-async t
   "non-nil means to generate images asynchronously so as to not delay
 the startup of org-mode.")
