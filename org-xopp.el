@@ -277,9 +277,10 @@ otherwise calls FAILURE-CB with 'event' and output."
         (list org-xopp-gzip-command "-c" raw-file)
         (lambda (new-xopp-data)
           ;; at this point we have the new gzipped .xopp file with the modifications
-          (with-temp-file new-xopp-file
-            (set-buffer-multibyte nil) ;; since we're working with raw binary data
-            (insert new-xopp-data))
+          (let ((coding-system-for-write 'no-conversion))  ;; since we're working with raw binary data
+            (with-temp-file new-xopp-file
+              (set-buffer-file-coding-system 'raw-text)
+              (insert new-xopp-data)))
           ;; export the image using xournalpp's commandline by running it on the new
           ;; .xopp file we created
           (org-xopp-command
