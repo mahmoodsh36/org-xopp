@@ -239,7 +239,7 @@ otherwise calls FAILURE-CB with 'event' and output."
           (file-name-extension filepath)))
 
 ;; if the document is multi-page, xournalpp generates files
-;; with names such of the form myfilename-i.png (e.g. myfilename-1.png)
+;; with names of the form myfilename-i.png (e.g. myfilename-1.png)
 ;; we need to check if thats the case and act accordingly
 (defun org-xopp-find-generated-images (out-path)
   (let ((images))
@@ -277,7 +277,7 @@ otherwise calls FAILURE-CB with 'event' and output."
         (list org-xopp-gzip-command "-c" raw-file)
         (lambda (new-xopp-data)
           ;; at this point we have the new gzipped .xopp file with the modifications
-          (let ((coding-system-for-write 'no-conversion))  ;; since we're working with raw binary data
+          (let ((coding-system-for-write 'no-conversion)) ;; since we're working with raw binary data
             (with-temp-buffer
               (set-buffer-file-coding-system 'raw-text)
               (insert new-xopp-data)

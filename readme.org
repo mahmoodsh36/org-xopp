@@ -1,3 +1,5 @@
+the readme is currently out of date and doesnt yet document all features.
+
 * screenshot
 
 [[screen.png]]
@@ -40,15 +42,12 @@ using ~straight~:
 
 * requirements
 
-- ~imagemagick~: ~convert~ command should be available.
+- ~imagemagick~: ~mogrify~ command should be available.
 - ~gunzip~ and ~gzip~ commands
 - ~xournalpp~
 
 * todos
 
-- handle edge cases (errors in image generation, etc)
-- live sync of figures (automatically display changes in org every time a linked .xopp file is modified)
-- more customization options
-- allow user to choose generated image type and dimensions (when extracting figures)
-- handle multi-page xournalpp documents in html exports
-- eliminate the dependency on the external script and run the commands in elisp instead
+- properly clear temp files and buffers
+- support ~org-insert-link~
+- support ~:preview~ link parameter if org >v9.7
