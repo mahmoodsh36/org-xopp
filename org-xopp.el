@@ -278,9 +278,10 @@ otherwise calls FAILURE-CB with 'event' and output."
         (lambda (new-xopp-data)
           ;; at this point we have the new gzipped .xopp file with the modifications
           (let ((coding-system-for-write 'no-conversion))  ;; since we're working with raw binary data
-            (with-temp-file new-xopp-file
+            (with-temp-buffer
               (set-buffer-file-coding-system 'raw-text)
-              (insert new-xopp-data)))
+              (insert new-xopp-data)
+              (write-region nil nil new-xopp-file)))
           ;; export the image using xournalpp's commandline by running it on the new
           ;; .xopp file we created
           (org-xopp-command
@@ -297,7 +298,6 @@ otherwise calls FAILURE-CB with 'event' and output."
                   (org-xopp-command
                    (append
                     (list org-xopp-imagemagick-command)
-                    ;; format-spec to replace %g with bg color
                     (mapcar
                      (lambda (arg)
                        (if (stringp arg)
