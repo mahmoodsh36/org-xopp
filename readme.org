@@ -51,3 +51,9 @@ using ~straight~:
 - properly clear temp files and buffers
 - support ~org-insert-link~
 - support ~:preview~ link parameter if org >v9.7
+- option to keep background grid in extracted images
+- integration with pdf-tools (browse your .xopp file as a pdf in emacs)
+- have emacs functions to copy images or latex previews into clipboard so that they can be pasted in xournalpp
+- process queue to avoid running too many subprocesses at once (which might happen in some cases if we're trying to extract too many images)
+- use hash for temporary file and buffer names
+- provide timestamp as the default filename when creating links

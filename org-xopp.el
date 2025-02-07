@@ -43,8 +43,7 @@ there have been changes to the .xopp files or not.")
   "the name of the imagemagick `mogrify' binary (`magick' is the modern alternative).")
 
 (defcustom org-xopp-imagemagick-default-args
-  (list "-transparent"
-        'org-xopp-background-color
+  (list "-transparent" 'org-xopp-background-color
         "-fuzz" "5%"
         "-trim")
   "default args to pass to imagemagick when invoking `mogrify'.
