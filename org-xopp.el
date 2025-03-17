@@ -76,11 +76,6 @@ them doesnt make emacs too laggy.")
 (defvar org-xopp-cache-dir-path temporary-file-directory
   "where cached results extracted from xopp files are stored.")
 
-(defvar org-xopp-temp-buffers nil
-  "this list holds the temporary buffers created by org-xopp that it needs to clean.
-
-it holds a list of cells in the format (in-xopp-file some-temp-buffer).")
-
 (defun org-xopp-setup ()
   "initial setup for org-xopp."
   (org-link-set-parameters "xopp-figure"
