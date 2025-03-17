@@ -73,6 +73,14 @@ them doesnt make emacs too laggy.")
 (defcustom org-xopp-gunzip-command "gunzip"
   "the command used to invoke the gunzip binary.")
 
+(defvar org-xopp-cache-dir-path temporary-file-directory
+  "where cached results extracted from xopp files are stored.")
+
+(defvar org-xopp-temp-buffers nil
+  "this list holds the temporary buffers created by org-xopp that it needs to clean.
+
+it holds a list of cells in the format (in-xopp-file some-temp-buffer).")
+
 (defun org-xopp-setup ()
   "initial setup for org-xopp."
   (org-link-set-parameters "xopp-figure"
@@ -86,15 +94,26 @@ them doesnt make emacs too laggy.")
 (defun org-xopp-new-figure ()
   "insert a link to a new xournalpp file meant for a figure, open the file."
   (interactive)
-  (when-let* ((filepath (read-file-name "New xournalpp file: "))
+  (when-let* ((filepath (read-file-name "New xournalpp figure: "
+                                        default-directory
+                                        nil
+                                        nil
+                                        (format "%s.xopp"
+                                                (format-time-string "%Y-%m-%d %H:%M:%S"))))
               (full-filepath (expand-file-name filepath)))
     (org-xopp-open-xournalpp full-filepath)
     (insert (format "[[xopp-figure:%s]]" full-filepath))))
 
+;; this function is a duplicate of the previous, yes they can be DRYed.
 (defun org-xopp-new-pages ()
   "insert a link to a new xournalpp file meant for a document, open the file."
   (interactive)
-  (when-let* ((filepath (read-file-name "New xournalpp file: "))
+  (when-let* ((filepath (read-file-name "New xournalpp document: "
+                                        default-directory
+                                        nil
+                                        nil
+                                        (format "%s.xopp"
+                                                (format-time-string "%Y-%m-%d %H:%M:%S"))))
               (full-filepath (expand-file-name filepath)))
     (org-xopp-open-xournalpp full-filepath)
     (insert (format "[[xopp-pages:%s]]" full-filepath))))
@@ -107,12 +126,13 @@ them doesnt make emacs too laggy.")
     (if (string= backend "html")
         (format "<img src='%s' />" image-filepath)
       (when (string= backend "latex")
-        (format "\\begin{center}\\includegraphics[max width=0.5\\linewidth]{%s}\\end{center}" image-filepath)))))
+        (format "\\begin{center}\\includegraphics[max width=0.5\\linewidth]{%s}\\end{center}"
+                image-filepath)))))
 
 (defun org-xopp-export-pages (path desc backend)
   "handles xournalpp documents on org exports."
   (cond ((equal backend 'latex)
-         (let ((pdf-filepath (org-xopp-temp-file path "pdf")))
+         (let ((pdf-filepath (org-xopp-cache-file path "pdf")))
            (call-process org-xopp-xournalpp-command
                          nil nil nil
                          "--create-pdf"
@@ -138,11 +158,11 @@ them doesnt make emacs too laggy.")
   "handles org's :follow function (just opens the xournalpp file)."
   (org-xopp-open-xournalpp path))
 
-(cl-defun org-xopp-temp-file (xopp-filepath &optional (extension "png"))
+(cl-defun org-xopp-cache-file (xopp-filepath &optional (extension "png"))
   "returns a filepath of the image to be generated from the given XOPP-FILEPATH."
   (format "%sorg-xopp-%s.%s"
-          temporary-file-directory
-          (file-name-base xopp-filepath)
+          org-xopp-cache-dir-path
+          (md5 xopp-filepath)
           extension))
 
 (defun org-xopp-place-figures ()
@@ -154,7 +174,7 @@ them doesnt make emacs too laggy.")
              (buffer (current-buffer))
              (path (org-element-property :path link))
              (absolute-path (expand-file-name path))
-             (output-path (org-xopp-temp-file absolute-path org-xopp-image-format)))
+             (output-path (org-xopp-cache-file absolute-path org-xopp-image-format)))
         (when (string-equal type "xopp-figure")
           ;; check if the .xopp file exists
           (if (not (file-exists-p absolute-path))
@@ -208,7 +228,6 @@ otherwise calls FAILURE-CB with 'event' and output."
           ;; use sentinels for async calls
           (make-process
            :name "xopp-preview"
-           ;; not a good idea to keep generating new buffers
            :buffer out-buffer
            :command command
            :sentinel
@@ -227,6 +246,8 @@ otherwise calls FAILURE-CB with 'event' and output."
           (let ((out (with-current-buffer
                          out-buffer
                        (string-trim (buffer-string)))))
+            ;; delete the temporary buffer we created
+            (kill-buffer out-buffer)
             (if (equal out-code 0)
                 (funcall success-cb out)
               (funcall failure-cb nil out))))))))
@@ -275,12 +296,12 @@ otherwise calls FAILURE-CB with 'event' and output."
        (org-xopp-command
         (list org-xopp-gzip-command "-c" raw-file)
         (lambda (new-xopp-data)
+          (delete-file raw-file)
           ;; at this point we have the new gzipped .xopp file with the modifications
           (let ((coding-system-for-write 'no-conversion)) ;; since we're working with raw binary data
-            (with-temp-buffer
+            (with-temp-file new-xopp-file
               (set-buffer-file-coding-system 'raw-text)
-              (insert new-xopp-data)
-              (write-region nil nil new-xopp-file)))
+              (insert new-xopp-data)))
           ;; export the image using xournalpp's commandline by running it on the new
           ;; .xopp file we created
           (org-xopp-command
@@ -289,6 +310,7 @@ otherwise calls FAILURE-CB with 'event' and output."
                  out-path
                  new-xopp-file)
            (lambda (stdout)
+             (delete-file new-xopp-file)
              ;; at this point we have the image generated by xournalpp
              ;; we run imagemagick to apply the last modifications such as bg removal
              (let ((images (org-xopp-find-generated-images out-path)))
@@ -317,6 +339,8 @@ otherwise calls FAILURE-CB with 'event' and output."
            async)
           out-path)
         (lambda (event out)
+          (delete-file raw-file)
+          (delete-file new-xopp-file)
           (message "error running gzip: %s, %s" event out))
         async)))
    (lambda (event out)
@@ -327,7 +351,7 @@ otherwise calls FAILURE-CB with 'event' and output."
   "synchronously generate a figure for the given file XOPP-FILEPATH.
 
 CB will be called with the filepath to the image."
-  (let* ((image-filepath (org-xopp-temp-file xopp-filepath org-xopp-image-format)))
+  (let* ((image-filepath (org-xopp-cache-file xopp-filepath org-xopp-image-format)))
     (when (or (not org-xopp-regenerate-only-on-change)
               (or (file-newer-than-file-p
                    xopp-filepath
